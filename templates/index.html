@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RepLog — Session History</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0c0c;
+    --surface: #141414;
+    --surface2: #1c1c1c;
+    --border: #242424;
+    --border2: #2e2e2e;
+    --accent: #b1070a;
+    --accent-bright: #e00d10;
+    --text: #ffffff;
+    --muted: #666666;
+    --muted2: #999999;
+    --squat: #ffffff;
+    --curl-r: #b1070a;
+    --curl-l: #cc2020;
+    --lateral: #888888;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    background: rgba(12,12,12,0.97);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.7rem;
+    letter-spacing: 0.12em;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent); }
+
+  nav { display: flex; gap: 0.3rem; }
+  nav a {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  nav a:hover { color: var(--text); border-color: var(--border2); }
+  nav a.active { color: var(--accent); border-color: var(--accent); background: rgba(177,7,10,0.1); }
+
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 3rem 2.5rem 5rem;
+  }
+
+  .page-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .page-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.8rem;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .page-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-top: 0.4rem;
+  }
+
+  /* Table wrapper */
+  .table-wrap {
+    border: 1px solid var(--border);
+    animation: fadeUp 0.4s 0.1s ease both;
+    overflow: hidden;
+  }
+
+  /* Column header */
+  .col-header {
+    display: grid;
+    grid-template-columns: 2.2fr 0.8fr 0.6fr 0.5fr 1.8fr;
+    border-bottom: 2px solid var(--border2);
+    padding: 0.55rem 1.2rem 0.55rem 1.5rem;
+    background: var(--bg);
+  }
+
+  .col-header span {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .col-header span:not(:first-child) { text-align: right; }
+
+  /* Day section */
+  .day-section + .day-section { border-top: 2px solid var(--border2); }
+
+  .day-header-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.5rem 1.2rem;
+    align-items: center;
+  }
+
+  /* Column header — static, sits at top of table */
+  .col-header {
+    display: grid;
+    grid-template-columns: 2.2fr 0.8fr 0.6fr 0.5fr 1.8fr;
+    border-bottom: 2px solid var(--border2);
+    padding: 0.55rem 1.2rem 0.55rem 1.5rem;
+    background: #111111;
+  }
+
+  .day-date {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+  }
+
+  .day-summary {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Session rows */
+  .session-row {
+    display: grid;
+    grid-template-columns: 2.2fr 0.8fr 0.6fr 0.5fr 1.8fr;
+    padding: 0.65rem 1.2rem 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background 0.12s;
+    position: relative;
+  }
+  .session-row:last-child { border-bottom: none; }
+  .session-row:hover { background: var(--surface2); }
+
+  /* Left colour stripe */
+  .session-row::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+  }
+  .ex-squat::before    { background: var(--squat); }
+  .ex-curl-r::before   { background: var(--curl-r); }
+  .ex-curl-l::before   { background: var(--curl-l); }
+  .ex-lateral::before  { background: var(--lateral); }
+
+  /* Cells */
+  .cell-exercise {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding-left: 1.1rem;
+  }
+
+  .ex-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .ex-squat   .ex-dot { background: var(--squat); }
+  .ex-curl-r  .ex-dot { background: var(--curl-r); }
+  .ex-curl-l  .ex-dot { background: var(--curl-l); }
+  .ex-lateral .ex-dot { background: var(--lateral); }
+
+  .ex-name-text {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .cell-reps {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.45rem;
+    letter-spacing: 0.04em;
+    text-align: right;
+    line-height: 1;
+    color: var(--text);
+  }
+  .cell-reps .unit {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.52rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-left: 0.15rem;
+    font-weight: 400;
+    vertical-align: middle;
+  }
+  .zero-reps .cell-reps { color: var(--border2); }
+  .zero-reps { opacity: 0.5; }
+
+  .cell-sets {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted2);
+    text-align: right;
+  }
+
+  .cell-id {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .cell-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: right;
+    letter-spacing: 0.03em;
+  }
+  .time-arrow {
+    color: var(--border2);
+    margin: 0 0.3rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 6rem 2rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Rep<span>Log</span></div>
+  <nav>
+    <a href="/" class="active">History</a>
+    <a href="/analytics">Analytics</a>
+    <a href="/?classic=1">Classic View</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="page-header">
+    <h1 class="page-title">Session History</h1>
+    <span class="page-meta">All sessions</span>
+  </div>
+
+  {% if grouped %}
+  <div class="table-wrap">
+
+    <div class="col-header">
+      <span>Exercise</span>
+      <span>Reps</span>
+      <span>Sets</span>
+      <span>#</span>
+      <span>Time</span>
+    </div>
+
+    {% for date in grouped.keys() %}
+    {% set day_sessions = grouped[date] %}
+    {% set day_total = day_sessions | selectattr('2', 'greaterthan', 0) | map(attribute=2) | sum %}
+
+    <div class="day-section">
+      <div class="day-header-row">
+        <div class="day-date">{{ date }}</div>
+        <div class="day-summary">{{ day_total }} reps &nbsp;·&nbsp; {{ day_sessions | length }} sessions</div>
+      </div>
+
+      {% for s in day_sessions %}
+        {% set ex = s[1].lower() %}
+        {% if 'squat' in ex %}{% set cls = 'ex-squat' %}
+        {% elif 'right' in ex and 'curl' in ex %}{% set cls = 'ex-curl-r' %}
+        {% elif 'left' in ex and 'curl' in ex %}{% set cls = 'ex-curl-l' %}
+        {% else %}{% set cls = 'ex-lateral' %}{% endif %}
+
+        <div class="session-row {{ cls }} {% if s[2] == 0 %}zero-reps{% endif %}">
+          <div class="cell-exercise {{ cls }}">
+            <div class="ex-dot"></div>
+            <span class="ex-name-text">{{ s[1] }}</span>
+          </div>
+          <div class="cell-reps">{{ s[2] }}<span class="unit">reps</span></div>
+          <div class="cell-sets">{{ s[3] }}&times;</div>
+          <div class="cell-id">#{{ s[0] }}</div>
+          <div class="cell-time">{{ s[5] }}<span class="time-arrow">→</span>{{ s[6] }}</div>
+        </div>
+      {% endfor %}
+    </div>
+    {% endfor %}
+
+  </div>
+  {% else %}
+    <div class="empty-state">No sessions recorded yet.</div>
+  {% endif %}
+</div>
+
+</body>
+</html>

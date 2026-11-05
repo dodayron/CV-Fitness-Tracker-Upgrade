@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RepLog — Analytics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0c0c0c;
+    --surface: #141414;
+    --surface2: #1c1c1c;
+    --border: #242424;
+    --border2: #2e2e2e;
+    --accent: #b1070a;
+    --accent-bright: #e00d10;
+    --text: #ffffff;
+    --muted: #666666;
+    --muted2: #999999;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 0 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    background: rgba(12,12,12,0.97);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+  }
+
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.7rem; letter-spacing: 0.12em; }
+  .logo span { color: var(--accent); }
+
+  nav { display: flex; gap: 0.3rem; }
+  nav a {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+  }
+  nav a:hover { color: var(--text); border-color: var(--border2); }
+  nav a.active { color: var(--accent); border-color: var(--accent); background: rgba(177,7,10,0.1); }
+
+  .container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 3rem 2.5rem 5rem;
+  }
+
+  .page-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.8rem;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    margin-bottom: 2.5rem;
+    animation: fadeUp 0.4s ease both;
+    text-align: center;
+  }
+
+  /* KPI Row */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.4s 0.08s ease both;
+  }
+
+  .kpi {
+    background: var(--surface);
+    padding: 1.6rem 1.5rem 1.4rem;
+    position: relative;
+  }
+  .kpi::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.7s cubic-bezier(0.16,1,0.3,1);
+  }
+  .kpi.loaded::after { transform: scaleX(1); }
+
+  .kpi-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+  .kpi-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.2rem;
+    letter-spacing: 0.03em;
+    line-height: 1;
+  }
+  .kpi-value.red { color: var(--accent); }
+
+  /* Panels */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.6rem;
+    animation: fadeUp 0.4s ease both;
+  }
+  .panel-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.15rem;
+    letter-spacing: 0.1em;
+    margin-bottom: 1.2rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .row { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; }
+  .row .panel { flex: 1; min-width: 0; }
+
+  canvas { display: block; width: 100% !important; }
+
+  /* Streak */
+  .streak-best { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; padding: 0.4rem 0; }
+  .streak-best span { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--text); letter-spacing: 0.05em; margin-left: 0.4rem; }
+
+  /* Loading state */
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .panel { animation-delay: 0.15s; }
+  .row .panel:nth-child(2) { animation-delay: 0.25s; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Rep<span>Log</span></div>
+  <nav>
+    <a href="/">History</a>
+    <a href="/analytics" class="active">Analytics</a>
+  </nav>
+</header>
+
+<div class="container">
+  <h1 class="page-title">Analytics</h1>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Total Reps</div><div class="kpi-value" id="kv-total">—</div></div>
+    <div class="kpi"><div class="kpi-label">Active Days</div><div class="kpi-value" id="kv-days">—</div></div>
+    <div class="kpi"><div class="kpi-label">Current Streak</div><div class="kpi-value red" id="kv-streak">—</div></div>
+    <div class="kpi"><div class="kpi-label">Longest Streak</div><div class="kpi-value" id="kv-best">—</div></div>
+  </div>
+
+  <div class="panel" style="margin-bottom:1.5rem;">
+    <div class="panel-title">Daily Rep Trend</div>
+    <div class="loading" id="trend-loading">Loading…</div>
+    <canvas id="trendChart" height="90" style="display:none;"></canvas>
+  </div>
+
+  <div class="panel" style="margin-bottom:1.5rem;">
+    <div class="panel-title">Streak</div>
+    <div class="streak-best">All-time best <span id="s-best">—</span></div>
+  </div>
+</div>
+
+
+<script>
+const COLORS = {
+  'Squat':               '#ffffff',
+  'Right Arm Curl':      '#b1070a',
+  'Left Arm Curl':       '#cc2525',
+  'R Lateral Raise':     '#888888',
+  'Right Lateral Raise': '#aaaaaa',
+};
+function color(name) { return COLORS[name] || '#666666'; }
+
+fetch('/api/analytics-data')
+  .then(r => r.json())
+  .then(data => {
+    const { date_range, daily_totals, exercise_daily, exercise_totals,
+            active_days, current_streak, longest_streak,
+            total_reps_30, active_days_count } = data;
+
+    // ── KPIs ────────────────────────────────────────────────
+    document.getElementById('kv-total').textContent  = total_reps_30;
+    document.getElementById('kv-days').textContent   = active_days_count;
+    document.getElementById('kv-streak').textContent = current_streak;
+    document.getElementById('kv-best').textContent   = longest_streak;
+    document.getElementById('s-best').textContent = longest_streak + ' days';
+
+    setTimeout(() => {
+      document.querySelectorAll('.kpi').forEach((el, i) => {
+        setTimeout(() => el.classList.add('loaded'), i * 100);
+      });
+    }, 150);
+
+    // ── Trend chart ─────────────────────────────────────────
+    document.getElementById('trend-loading').style.display = 'none';
+    const tCanvas = document.getElementById('trendChart');
+    tCanvas.style.display = 'block';
+    const tCtx = tCanvas.getContext('2d');
+    const grad = tCtx.createLinearGradient(0, 0, 0, 200);
+    grad.addColorStop(0, 'rgba(177,7,10,0.45)');
+    grad.addColorStop(1, 'rgba(177,7,10,0.0)');
+
+    new Chart(tCtx, {
+      type: 'line',
+      data: {
+        labels: date_range.map(d => d.slice(5)),
+        datasets: [{
+          data: daily_totals,
+          borderColor: '#b1070a',
+          backgroundColor: grad,
+          borderWidth: 2,
+          pointRadius: daily_totals.map(v => v > 0 ? 3 : 0),
+          pointBackgroundColor: '#e00d10',
+          tension: 0.35,
+          fill: true,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#1c1c1c',
+            borderColor: '#2e2e2e',
+            borderWidth: 1,
+            titleColor: '#666',
+            bodyColor: '#ffffff',
+            titleFont: { family: 'DM Mono', size: 10 },
+            bodyFont: { family: 'Bebas Neue', size: 18 },
+            callbacks: {
+              title: ctx => ctx[0].label,
+              label: ctx => ctx.raw + ' reps'
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#555', font: { family: 'DM Mono', size: 9 }, maxTicksLimit: 10 },
+            border: { color: '#242424' }
+          },
+          y: {
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#555', font: { family: 'DM Mono', size: 9 } },
+            border: { color: '#242424' }
+          }
+        }
+      }
+    });
+
+  })
+  .catch(err => {
+    console.error('Failed to load analytics data:', err);
+    document.querySelectorAll('.loading').forEach(el => {
+      el.textContent = 'Error loading data. Is Flask running?';
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+model,resolution,flask,avg_fps,avg_temp
+Lightweight,640x480,no,20.75,48.96
+Lightweight,1280x720,no,21.35,49.6
+Lightweight,1680x1050,no,19.27,50.42
+Lightweight,640x480,yes,22.4,49.21
+Lightweight,1280x720,yes,21.07,49.89
+Lightweight,1680x1050,yes,18.43,50.1
+Heavy,640x480,no,6.09,50.24
+Heavy,1280x720,no,5.71,50.75
+Heavy,1680x1050,no,7.43,50.77
+Heavy,640x480,yes,6.05,50.94
+Heavy,1280x720,yes,5.94,50.97
+Heavy,1680x1050,yes,5.51,50.93
